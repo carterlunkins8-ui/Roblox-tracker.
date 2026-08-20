@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Check — Roblox Stats Tracker</title>
+<style>
+  :root{
+    --bg:#0d0e12;
+    --panel:#15171d;
+    --panel-line:#2a2d36;
+    --text:#eef0f4;
+    --muted:#8a8f9c;
+    --brick:#00a2ff;
+    --brick-dim:#0a3a56;
+    --gold:#ffd23f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height:100vh;
+  }
+  .studs{
+    position:fixed; inset:0; z-index:0; opacity:0.05; pointer-events:none;
+    background-image: radial-gradient(circle, #fff 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
+  }
+  header{
+    position:relative; z-index:1;
+    padding:48px 20px 32px;
+    text-align:center;
+    border-bottom:1px solid var(--panel-line);
+  }
+  .eyebrow{
+    letter-spacing:.18em; text-transform:uppercase; font-size:11px;
+    color:var(--brick); font-weight:700; margin-bottom:10px;
+  }
+  h1{
+    font-family:'Arial Black', Impact, sans-serif;
+    font-size:clamp(32px,7vw,52px);
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+    line-height:1;
+  }
+  h1 span{ color:var(--brick); }
+  .sub{ color:var(--muted); font-size:15px; max-width:440px; margin:0 auto; }
+
+  main{ position:relative; z-index:1; max-width:640px; margin:0 auto; padding:32px 20px 60px; }
+
+  .search-row{ display:flex; gap:10px; margin-bottom:28px; }
+  input[type=text]{
+    flex:1; background:var(--panel); border:1px solid var(--panel-line);
+    color:var(--text); padding:14px 16px; border-radius:8px; font-size:15px;
+    outline:none;
+  }
+  input[type=text]:focus{ border-color:var(--brick); }
+  button{
+    background:var(--brick); color:#04121c; border:none; font-weight:700;
+    padding:14px 20px; border-radius:8px; cursor:pointer; font-size:15px;
+  }
+  button:hover{ filter:brightness(1.08); }
+  button:active{ transform:translateY(1px); }
+  button:focus-visible, input:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+  .card{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:12px;
+    padding:24px; margin-bottom:20px; display:none;
+  }
+  .card.show{ display:block; }
+  .profile-row{ display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+  .avatar{
+    width:64px; height:64px; border-radius:10px; background:var(--brick-dim);
+    display:flex; align-items:center; justify-content:center; font-weight:900; font-size:22px;
+    color:var(--brick); flex-shrink:0;
+  }
+  .pname{ font-weight:800; font-size:19px; }
+  .phandle{ color:var(--muted); font-size:13px; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .stat{ background:var(--bg); border:1px solid var(--panel-line); border-radius:8px; padding:14px; }
+  .stat-num{ font-size:22px; font-weight:800; }
+  .stat-label{ color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; margin-top:2px;}
+
+  .msg{
+    padding:14px 16px; border-radius:8px; font-size:14px; margin-bottom:20px; display:none;
+  }
+  .msg.show{ display:block; }
+  .msg.error{ background:#2a1414; border:1px solid #5a2323; color:#ffb4b4; }
+  .msg.loading{ background:var(--panel); border:1px solid var(--panel-line); color:var(--muted); }
+
+  .buy-block{
+    background:linear-gradient(180deg, #17181f, #121319);
+    border:1px solid var(--panel-line); border-radius:12px; padding:24px; text-align:center;
+  }
+  .buy-block h2{ margin:0 0 6px; font-size:18px; }
+  .buy-block p{ color:var(--muted); font-size:14px; margin:0 0 18px; line-height:1.5;}
+  .buy-btn{
+    display:inline-block; background:var(--gold); color:#241d02; font-weight:800;
+    padding:14px 28px; border-radius:8px; text-decoration:none; font-size:15px;
+  }
+  .buy-btn:hover{ filter:brightness(1.06); }
+
+  footer{ text-align:center; color:var(--muted); font-size:12px; padding:20px; border-top:1px solid var(--panel-line); position:relative; z-index:1;}
+  footer a{ color:var(--brick); }
+</style>
+</head>
+<body>
+<div class="studs"></div>
+
+<header>
+  <div class="eyebrow">Stat Tracker</div>
+  <h1>Block <span>Check</span></h1>
+  <p class="sub">Look up a Roblox player's public profile stats. Buying Robux always happens on Roblox's own site — we just point you there.</p>
+</header>
+
+<main>
+  <div class="search-row">
+    <input type="text" id="username" placeholder="Enter a Roblox username" autocomplete="off" />
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <div class="msg loading" id="loadingMsg">Looking that player up…</div>
+  <div class="msg error" id="errorMsg"></div>
+
+  <div class="card" id="resultCard">
+    <div class="profile-row">
+      <div class="avatar" id="initial">?</div>
+      <div>
+        <div class="pname" id="displayName">—</div>
+        <div class="phandle" id="username-handle">@—</div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-num" id="friendsCount">—</div><div class="stat-label">Friends</div></div>
+      <div class="stat"><div class="stat-num" id="followersCount">—</div><div class="stat-label">Followers</div></div>
+      <div class="stat"><div class="stat-num" id="followingCount">—</div><div class="stat-label">Following</div></div>
+      <div class="stat"><div class="stat-num" id="idNum">—</div><div class="stat-label">User ID</div></div>
+    </div>
+  </div>
+
+  <div class="buy-block">
+    <h2>Need more Robux?</h2>
+    <p>Robux can only be purchased safely through Roblox directly. Any other site "selling" or "generating" Robux is a scam that can get your account banned or stolen.</p>
+    <a class="buy-btn" href="https://www.roblox.com/upgrades/robux" target="_blank" rel="noopener">Buy Robux on Roblox.com →</a>
+  </div>
+</main>
+
+<footer>
+  Stats pulled from Roblox's public API via a small proxy server. Not affiliated with Roblox Corporation.
+</footer>
+
+<script>
+const searchBtn = document.getElementById('searchBtn');
+const usernameInput = document.getElementById('username');
+const loadingMsg = document.getElementById('loadingMsg');
+const errorMsg = document.getElementById('errorMsg');
+const resultCard = document.getElementById('resultCard');
+
+function showLoading(on){ loadingMsg.classList.toggle('show', on); }
+function showError(text){
+  errorMsg.textContent = text;
+  errorMsg.classList.toggle('show', !!text);
+}
+
+async function lookupUser(){
+  const name = usernameInput.value.trim();
+  showError('');
+  resultCard.classList.remove('show');
+  if(!name){ showError('Type a username first.'); return; }
+
+  showLoading(true);
+  try{
+    const resolveRes = await fetch(`/api/resolve?username=${encodeURIComponent(name)}`);
+    const resolveData = await resolveRes.json();
+
+    if(!resolveRes.ok){
+      showLoading(false);
+      showError(resolveData.error || 'Something went wrong looking that player up.');
+      return;
+    }
+
+    const user = resolveData;
+
+    const statsRes = await fetch(`/api/stats/${user.id}`);
+    const stats = await statsRes.json();
+
+    document.getElementById('displayName').textContent = user.displayName || user.name;
+    document.getElementById('username-handle').textContent = '@' + user.name;
+    document.getElementById('initial').textContent = (user.name[0] || '?').toUpperCase();
+    document.getElementById('friendsCount').textContent = stats.friends ?? '—';
+    document.getElementById('followersCount').textContent = stats.followers ?? '—';
+    document.getElementById('followingCount').textContent = stats.following ?? '—';
+    document.getElementById('idNum').textContent = user.id;
+
+    showLoading(false);
+    resultCard.classList.add('show');
+  }catch(err){
+    showLoading(false);
+    showError("Couldn't reach the server. Make sure the proxy (server.js) is running.");
+  }
+}
+
+searchBtn.addEventListener('click', lookupUser);
+usernameInput.addEventListener('keydown', e => { if(e.key === 'Enter') lookupUser(); });
+</script>
+</body>
+</html>
